@@ -93,7 +93,8 @@ const About = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const BASE_URL = "https://backendvideography.vercel.app";
+        // UPDATED BASE URL
+        const BASE_URL = "https://backend-swart-seven-13.vercel.app";
         const endpoints = {
           stats: `${BASE_URL}/about/stats/`,
           core: `${BASE_URL}/about/core-values/`,
@@ -141,7 +142,7 @@ const About = () => {
 
   // Function to navigate to contact form
   const navigateToContact = () => {
-  window.location.href = "/#contact";
+    window.location.href = "/#contact";
   };
 
   const valueIcons = [Heart, Film, Lightbulb, Users];
@@ -151,7 +152,7 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white overflow-x-hidden">
-    <Header />      
+      <Header />      
       {/* TABS */}
       {tabContent.length > 0 && (
         <section className="py-12 sm:py-16 px-4 sm:px-8 bg-gray-900">
@@ -518,18 +519,18 @@ const About = () => {
               {cta.description}
             </motion.p>
             <motion.button
-  initial={{ opacity: 0, y: 20 }}
-  whileInView={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.9, delay: 0.25, ease: smoothEase }}
-  viewport={{ once: true, margin: "-80px" }}
-  whileHover={{ scale: 1.06, transition: hoverSpring }}
-  whileTap={{ scale: 0.98 }}
-  onClick={navigateToContact}  // ADD THIS LINE
-  className="group inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-105 transition-transform px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold cursor-pointer"  // ADD cursor-pointer
->
-  <span className="text-sm sm:text-base">{cta.button_text}</span>
-  <ArrowRight className="group-hover:translate-x-2 transition-transform" />
-</motion.button>
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, delay: 0.25, ease: smoothEase }}
+              viewport={{ once: true, margin: "-80px" }}
+              whileHover={{ scale: 1.06, transition: hoverSpring }}
+              whileTap={{ scale: 0.98 }}
+              onClick={navigateToContact}
+              className="group inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-105 transition-transform px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold cursor-pointer"
+            >
+              <span className="text-sm sm:text-base">{cta.button_text}</span>
+              <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+            </motion.button>
           </div>
         </section>
       )}

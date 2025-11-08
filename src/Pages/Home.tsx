@@ -94,13 +94,6 @@ interface TabContent {
   image_url?: string;
 }
 
-// interface Category {
-//   id: number;
-//   name: string;
-//   icon: string;
-//   count: number;
-// }
-
 interface Project {
   id: number;
   title: string;
@@ -136,7 +129,8 @@ interface CVData {
   cv_url?: string;
 }
 
-const BASE_URL = 'https://backendvideography.vercel.app';
+// UPDATED BASE URL
+const BASE_URL = 'https://backend-swart-seven-13.vercel.app';
 
 // Dynamic endpoint – local in dev, prod in build
 const CV_ENDPOINT = import.meta.env.DEV
@@ -196,7 +190,7 @@ const Home = () => {
   const [, setCvData] = useState<CVData | null>(null);
   const [cvLoading, setCvLoading] = useState(false);
 
-  // === FETCH CV (exactly as you requested) ===
+  // === FETCH CV ===
   useEffect(() => {
     const fetchCV = async () => {
       try {
@@ -212,30 +206,29 @@ const Home = () => {
     fetchCV();
   }, []);
 
-  // === HANDLE VIEW CV (API call + open in new tab) ===
- const handleViewCV = async () => {
-  setCvLoading(true);
-  try {
-    const response = await fetch(CV_ENDPOINT);
-    if (response.ok) {
-      const data = await response.json();
-      const cv = Array.isArray(data) && data.length > 0 ? data[0] : data;
-
-      if (cv?.cv_url) {
-        window.open(cv.cv_url, '_blank', 'noopener,noreferrer');
+  // === HANDLE VIEW CV ===
+  const handleViewCV = async () => {
+    setCvLoading(true);
+    try {
+      const response = await fetch(CV_ENDPOINT);
+      if (response.ok) {
+        const data = await response.json();
+        const cv = Array.isArray(data) && data.length > 0 ? data[0] : data;
+        if (cv?.cv_url) {
+          window.open(cv.cv_url, '_blank', 'noopener,noreferrer');
+        } else {
+          alert('CV URL not found.');
+        }
       } else {
-        alert('CV URL not found.');
+        alert('Failed to load CV. Please try again.');
       }
-    } else {
-      alert('Failed to load CV. Please try again.');
+    } catch (error) {
+      console.error("Error fetching CV on click:", error);
+      alert('Network error. Please check your connection.');
+    } finally {
+      setCvLoading(false);
     }
-  } catch (error) {
-    console.error("Error fetching CV on click:", error);
-    alert('Network error. Please check your connection.');
-  } finally {
-    setCvLoading(false);
-  }
-};
+  };
 
   // === FORM STATES ===
   const [formData, setFormData] = useState<FormData>({
@@ -256,43 +249,40 @@ const Home = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     setFormError(null);
   };
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
 
-  if (!formData.name || !formData.email || !formData.subject || !formData.message) {
-    setFormError('Please fill in all required fields.');
-    return;
-  }
-
-  const templateParams = {
-    name: formData.name,
-    email: formData.email,
-    whatsapp: formData.whatsapp,
-    subject: formData.subject,
-    message: formData.message,
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
+      setFormError('Please fill in all required fields.');
+      return;
+    }
+    const templateParams = {
+      name: formData.name,
+      email: formData.email,
+      whatsapp: formData.whatsapp,
+      subject: formData.subject,
+      message: formData.message,
+    };
+    try {
+      console.log('Sending email with params:', templateParams);
+     
+      const response = await emailjs.send(
+        'service_t0pawjh',
+        'template_05v1iyi',
+        templateParams,
+        'Cw8opDgdlvyc27n2Q'
+      );
+     
+      console.log('Email sent successfully:', response);
+      setIsSubmitted(true);
+      setFormError(null);
+      setFormData({ name: '', email: '', whatsapp: '', subject: '', message: '' });
+      setTimeout(() => setIsSubmitted(false), 3000);
+    } catch (err: any) {
+      console.error('EmailJS Error:', err);
+      setFormError(`Failed to send message: ${err?.text || err?.message || 'Unknown error'}`);
+    }
   };
-
-  try {
-    console.log('Sending email with params:', templateParams); // Debug log
-    
-    const response = await emailjs.send(
-      'service_t0pawjh',
-      'template_05v1iyi',
-      templateParams,
-      'Cw8opDgdlvyc27n2Q'
-    );
-    
-    console.log('Email sent successfully:', response); // Debug log
-
-    setIsSubmitted(true);
-    setFormError(null);
-    setFormData({ name: '', email: '', whatsapp: '', subject: '', message: '' });
-    setTimeout(() => setIsSubmitted(false), 3000);
-  } catch (err: any) {
-    console.error('EmailJS Error:', err); // Detailed error log
-    setFormError(`Failed to send message: ${err?.text || err?.message || 'Unknown error'}`);
-  }
-};
 
   // === SCROLL TO CONTACT FORM ===
   useLayoutEffect(() => {
@@ -302,12 +292,10 @@ const handleSubmit = async (e: React.FormEvent) => {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     };
-
     if (window.location.hash === '#contact') {
       const timer = setTimeout(scrollToContact, 300);
       return () => clearTimeout(timer);
     }
-
     const handleHashChange = () => {
       if (window.location.hash === '#contact') scrollToContact();
     };
@@ -316,78 +304,71 @@ const handleSubmit = async (e: React.FormEvent) => {
   }, []);
 
   // === DATA FETCHING ===
-// === DATA FETCHING ===
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [
+          heroRes,
+          statsRes,
+          introRes,
+          skillsRes,
+          toolsRes,
+          faqsRes,
+          ctaRes,
+          tabsRes,
+          projectsRes
+        ] = await Promise.all([
+          axios.get(`${BASE_URL}/home/hero/`).catch(() => ({ data: null })),
+          axios.get(`${BASE_URL}/home/stats/`).catch(() => ({ data: [] })),
+          axios.get(`${BASE_URL}/home/intro/`).catch(() => ({ data: null })),
+          axios.get(`${BASE_URL}/home/skills/`).catch(() => ({ data: [] })),
+          axios.get(`${BASE_URL}/home/tools/`).catch(() => ({ data: [] })),
+          axios.get(`${BASE_URL}/home/faqs/`).catch(() => ({ data: [] })),
+          axios.get(`${BASE_URL}/home/cta/`).catch(() => ({ data: null })),
+          axios.get(`${BASE_URL}/about/tab-content/`).catch(() => ({ data: [] })),
+          axios.get(`${BASE_URL}/api/portfolio/projects/`).catch(() => ({ data: { results: [] } }))
+        ]);
 
-      const [
-        heroRes,
-        statsRes,
-        introRes,
-        skillsRes,
-        toolsRes,
-        faqsRes,
-        ctaRes,
-        tabsRes,
-        // remove categories if you don’t need them on Home
-        projectsRes
-      ] = await Promise.all([
-        axios.get(`${BASE_URL}/home/hero/`).catch(() => ({ data: null })),
-        axios.get(`${BASE_URL}/home/stats/`).catch(() => ({ data: [] })),
-        axios.get(`${BASE_URL}/home/intro/`).catch(() => ({ data: null })),
-        axios.get(`${BASE_URL}/home/skills/`).catch(() => ({ data: [] })),
-        axios.get(`${BASE_URL}/home/tools/`).catch(() => ({ data: [] })),
-        axios.get(`${BASE_URL}/home/faqs/`).catch(() => ({ data: [] })),
-        axios.get(`${BASE_URL}/home/cta/`).catch(() => ({ data: null })),
-        axios.get(`${BASE_URL}/about/tab-content/`).catch(() => ({ data: [] })),
-        // categories removed – not used on Home
-        axios.get(`${BASE_URL}/api/portfolio/projects/`).catch(() => ({ data: { results: [] } }))
-      ]);
+        // ---- HERO ----
+        const heroData = extractData<Hero>(heroRes.data);
+        const heroItem = heroData[0];
+        if (heroItem?.typewriter_phrases) {
+          const phrasesData = Array.isArray(heroItem.typewriter_phrases)
+            ? heroItem.typewriter_phrases
+            : typeof heroItem.typewriter_phrases === 'string'
+              ? heroItem.typewriter_phrases.split(',').map(p => p.trim())
+              : ['Cinematic Excellence'];
+          setPhrases(phrasesData);
+        }
 
-      // ---- HERO ----
-      const heroData = extractData<Hero>(heroRes.data);
-      const heroItem = heroData[0];
-      if (heroItem?.typewriter_phrases) {
-        const phrasesData = Array.isArray(heroItem.typewriter_phrases)
-          ? heroItem.typewriter_phrases
-          : typeof heroItem.typewriter_phrases === 'string'
-            ? heroItem.typewriter_phrases.split(',').map(p => p.trim())
-            : ['Cinematic Excellence'];
-        setPhrases(phrasesData);
+        setStats(extractData<Stat>(statsRes.data).filter(s => s.is_active));
+        setIntro(extractData<Intro>(introRes.data)[0] || null);
+        setSkills(extractData<Skill>(skillsRes.data).filter(s => s.is_active));
+        setTools(extractData<Tool>(toolsRes.data).filter(t => t.is_active));
+        setFaqs(extractData<FAQ>(faqsRes.data).filter(f => f.is_active));
+        setCta(extractData<CTA>(ctaRes.data)[0] || null);
+        setTabContent(extractData<TabContent>(tabsRes.data));
+
+        // ---- PROJECTS ----
+        const projectList = extractData<Project>(projectsRes.data);
+        setProjects(projectList);
+
+        setLoading(false);
+      } catch (err: any) {
+        setError(`Failed to load data: ${err.message}`);
+        setLoading(false);
       }
-
-      setStats(extractData<Stat>(statsRes.data).filter(s => s.is_active));
-      setIntro(extractData<Intro>(introRes.data)[0] || null);
-      setSkills(extractData<Skill>(skillsRes.data).filter(s => s.is_active));
-      setTools(extractData<Tool>(toolsRes.data).filter(t => t.is_active));
-      setFaqs(extractData<FAQ>(faqsRes.data).filter(f => f.is_active));
-      setCta(extractData<CTA>(ctaRes.data)[0] || null);
-      setTabContent(extractData<TabContent>(tabsRes.data));
-
-      // ---- PROJECTS (the important line) ----
-      const projectList = extractData<Project>(projectsRes.data);
-      setProjects(projectList);
-
-      setLoading(false);
-    } catch (err: any) {
-      setError(`Failed to load data: ${err.message}`);
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, []);
+    };
+    fetchData();
+  }, []);
 
   // === TYPEWRITER EFFECT ===
   useEffect(() => {
     if (phrases.length === 0) return;
-
     const currentPhrase = phrases[currentPhraseIndex];
     const typingSpeed = isDeleting ? 50 : 150;
-
     const timer = setTimeout(() => {
       if (!isDeleting && typewriterText.length < currentPhrase.length) {
         setTypewriterText(currentPhrase.substring(0, typewriterText.length + 1));
@@ -400,14 +381,12 @@ useEffect(() => {
         setCurrentPhraseIndex((prev) => (prev + 1) % phrases.length);
       }
     }, typingSpeed);
-
     return () => clearTimeout(timer);
   }, [typewriterText, isDeleting, currentPhraseIndex, phrases]);
 
   // === STATS ANIMATION ===
   useEffect(() => {
     if (stats.length === 0) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -417,7 +396,6 @@ useEffect(() => {
             awardsWon: parseStatValue(stats.find(s => s.name.toLowerCase().includes('awards'))?.value || '15'),
             citiesCov: parseStatValue(stats.find(s => s.name.toLowerCase().includes('cities'))?.value || '25'),
           };
-
           const duration = 1000;
           const startTime = Date.now();
           const interval = setInterval(() => {
@@ -431,13 +409,11 @@ useEffect(() => {
             });
             if (progress >= 1) clearInterval(interval);
           }, 50);
-
           if (statsRef.current) observer.unobserve(statsRef.current);
         }
       },
       { threshold: 0.5 }
     );
-
     if (statsRef.current) observer.observe(statsRef.current);
     return () => observer.disconnect();
   }, [stats]);

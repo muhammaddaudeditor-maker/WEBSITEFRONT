@@ -10,7 +10,7 @@ const CategoryList: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    fetch("https://backendvideography.vercel.app/portfolio/categories/")
+    fetch("https://backend-swart-seven-13.vercel.app/portfolio/categories/")
       .then((res) => res.json())
       .then((data) => setCategories(data.results || []))
       .catch((err) => console.error("Error fetching categories:", err));

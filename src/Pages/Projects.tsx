@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Header from "../Components/Header";
 import Footer from "../Components/footer";
 
-const API_BASE_URL = "https://backendvideography.vercel.app/api";
+const API_BASE_URL = "https://backend-swart-seven-13.vercel.app/api";
 
 interface HeroSection {
   id: number;

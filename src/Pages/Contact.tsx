@@ -87,9 +87,9 @@ export default function ContactPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const contactInfoRes = await fetch('https://backendvideography.vercel.app/api/contact/info/');
-        const reasonsRes = await fetch('https://backendvideography.vercel.app/api/contact/reasons/');
-        const heroRes = await fetch('https://backendvideography.vercel.app/api/contact/hero/contact/');
+        const contactInfoRes = await fetch('https://backend-swart-seven-13.vercel.app/api/contact/info/');
+        const reasonsRes = await fetch('https://backend-swart-seven-13.vercel.app/api/contact/reasons/');
+        const heroRes = await fetch('https://backend-swart-seven-13.vercel.app/api/contact/hero/contact/');
 
         if (!contactInfoRes.ok || !reasonsRes.ok || !heroRes.ok) {
           throw new Error('Failed to fetch data from one or more endpoints');

@@ -54,8 +54,8 @@ const Portfolio = () => {
     const fetchData = async () => {
       try {
         const [catRes, projRes] = await Promise.all([
-          fetch('https://backendvideography.vercel.app/api/portfolio/categories/'),
-          fetch('https://backendvideography.vercel.app/api/portfolio/projects/'),
+          fetch('https://backend-swart-seven-13.vercel.app/api/portfolio/categories/'),
+          fetch('https://backend-swart-seven-13.vercel.app/api/portfolio/projects/'),
         ]);
 
         const catData = await catRes.json();

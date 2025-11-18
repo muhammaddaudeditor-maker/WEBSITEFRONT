@@ -28,7 +28,7 @@ const Header = () => {
     const fetchSiteConfig = async () => {
       try {
         const response = await fetch(
-          "https://backend-swart-seven-13.vercel.app/api/site-config/"
+          "https://api.daudportfolio.cloud/api/site-config/"
         );
         if (response.ok) {
           const data = await response.json();
@@ -46,7 +46,7 @@ const Header = () => {
     const fetchCV = async () => {
       try {
         const response = await fetch(
-          "https://backend-swart-seven-13.vercel.app/api/cv/active/"
+          "https://api.daudportfolio.cloud/api/cv/active/"
         );
         if (response.ok) {
           const data = await response.json();

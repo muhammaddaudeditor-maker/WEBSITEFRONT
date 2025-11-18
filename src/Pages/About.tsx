@@ -94,7 +94,7 @@ const About = () => {
     const fetchAll = async () => {
       try {
         // UPDATED BASE URL
-        const BASE_URL = "https://backend-swart-seven-13.vercel.app";
+        const BASE_URL = "https://api.daudportfolio.cloud";
         const endpoints = {
           stats: `${BASE_URL}/about/stats/`,
           core: `${BASE_URL}/about/core-values/`,

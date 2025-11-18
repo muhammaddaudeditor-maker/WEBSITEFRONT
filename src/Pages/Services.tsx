@@ -18,7 +18,7 @@ import Header from '../Components/Header';
 import Footer from '../Components/footer';
 
 // API Base URL - Change this to your backend URL
-const API_BASE_URL = 'https://backend-swart-seven-13.vercel.app/api';
+const API_BASE_URL = 'https://api.daudportfolio.cloud/api';
 
 interface ServiceFeature {
   id: number;

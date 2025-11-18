@@ -130,7 +130,7 @@ interface CVData {
 }
 
 // UPDATED BASE URL
-const BASE_URL = 'https://backend-swart-seven-13.vercel.app';
+const BASE_URL = 'https://api.daudportfolio.cloud';
 
 // Dynamic endpoint – local in dev, prod in build
 const CV_ENDPOINT = import.meta.env.DEV

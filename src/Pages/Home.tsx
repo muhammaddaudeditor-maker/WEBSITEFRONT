@@ -11,7 +11,7 @@ import Testimonials from '../Components/Testimonials';
 import {
   Play, Award, Calendar, Users, MapPin, ArrowUpRight, HelpCircle,
   PenTool, Palette, Music, MessageCircle, Edit3, Cpu, Camera, Laptop,
-  Workflow, Wifi, Sparkles, Heart, Building2, Film, Eye, X
+  Workflow, Wifi, Sparkles, Heart, Building2, Film, Eye, X, Lightbulb, Target, Zap
 } from 'lucide-react';
 
 // === INTERFACES ===
@@ -48,7 +48,11 @@ interface Intro {
   secondary_button_text: string;
   is_active: boolean;
 }
-
+interface CoreValue {
+  id: number;
+  title: string;
+  description: string;
+}
 interface Skill {
   id?: number;
   title: string;
@@ -185,6 +189,7 @@ const Home = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [videoPopup, setVideoPopup] = useState<string | null>(null);
   const contactFormRef = useRef<HTMLDivElement>(null);
+  const [coreValues, setCoreValues] = useState<CoreValue[]>([]);
 
   // === CV STATE ===
   const [, setCvData] = useState<CVData | null>(null);
@@ -310,26 +315,28 @@ const Home = () => {
         setLoading(true);
         setError(null);
         const [
-          heroRes,
-          statsRes,
-          introRes,
-          skillsRes,
-          toolsRes,
-          faqsRes,
-          ctaRes,
-          tabsRes,
-          projectsRes
-        ] = await Promise.all([
-          axios.get(`${BASE_URL}/home/hero/`).catch(() => ({ data: null })),
-          axios.get(`${BASE_URL}/home/stats/`).catch(() => ({ data: [] })),
-          axios.get(`${BASE_URL}/home/intro/`).catch(() => ({ data: null })),
-          axios.get(`${BASE_URL}/home/skills/`).catch(() => ({ data: [] })),
-          axios.get(`${BASE_URL}/home/tools/`).catch(() => ({ data: [] })),
-          axios.get(`${BASE_URL}/home/faqs/`).catch(() => ({ data: [] })),
-          axios.get(`${BASE_URL}/home/cta/`).catch(() => ({ data: null })),
-          axios.get(`${BASE_URL}/about/tab-content/`).catch(() => ({ data: [] })),
-          axios.get(`${BASE_URL}/api/portfolio/projects/`).catch(() => ({ data: { results: [] } }))
-        ]);
+  heroRes,
+  statsRes,
+  introRes,
+  skillsRes,
+  toolsRes,
+  faqsRes,
+  ctaRes,
+  tabsRes,
+  projectsRes,
+  coreValuesRes  
+] = await Promise.all([
+  axios.get(`${BASE_URL}/home/hero/`).catch(() => ({ data: null })),
+  axios.get(`${BASE_URL}/home/stats/`).catch(() => ({ data: [] })),
+  axios.get(`${BASE_URL}/home/intro/`).catch(() => ({ data: null })),
+  axios.get(`${BASE_URL}/home/skills/`).catch(() => ({ data: [] })),
+  axios.get(`${BASE_URL}/home/tools/`).catch(() => ({ data: [] })),
+  axios.get(`${BASE_URL}/home/faqs/`).catch(() => ({ data: [] })),
+  axios.get(`${BASE_URL}/home/cta/`).catch(() => ({ data: null })),
+  axios.get(`${BASE_URL}/about/tab-content/`).catch(() => ({ data: [] })),
+  axios.get(`${BASE_URL}/api/portfolio/projects/`).catch(() => ({ data: { results: [] } })),
+  axios.get(`${BASE_URL}/about/core-values/`).catch(() => ({ data: [] })) 
+]);
 
         // ---- HERO ----
         const heroData = extractData<Hero>(heroRes.data);
@@ -350,6 +357,7 @@ const Home = () => {
         setFaqs(extractData<FAQ>(faqsRes.data).filter(f => f.is_active));
         setCta(extractData<CTA>(ctaRes.data)[0] || null);
         setTabContent(extractData<TabContent>(tabsRes.data));
+        setCoreValues(extractData<CoreValue>(coreValuesRes.data));
 
         // ---- PROJECTS ----
         const projectList = extractData<Project>(projectsRes.data);
@@ -600,27 +608,35 @@ const Home = () => {
                           </>
                         )}
 
-                        <motion.div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 sm:pt-6 mt-4 sm:mt-8">
-                          <button className="group bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg hover:shadow-purple-500/50 w-fit mx-auto sm:mx-0">
-                            <Play size={16} className="group-hover:scale-110 transition-transform" />
-                            {intro.primary_button_text}
-                          </button>
+                        <motion.div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pb-2 sm:pb-4 mt-4 sm:mt-8">
+{/* View My Portfolio Button */}
+  <button
+    onClick={() => window.location.href = "/portfolio"}
+    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg hover:shadow-purple-500/50 w-fit mx-auto sm:mx-0"
+  >
+    <Film size={16} />
+    View My Portfolio
+  </button>
 
                           {/* CV BUTTON: Fresh API call + open in new tab */}
                           <button
-                            onClick={handleViewCV}
-                            disabled={cvLoading}
-                            className={`flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 border border-white/30 hover:border-white/50 w-fit mx-auto sm:mx-0 ${
-                              cvLoading ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
-                          >
-                            {cvLoading ? (
-                              <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-                            ) : (
-                              <Download size={16} />
-                            )}
-                            {intro.secondary_button_text}
-                          </button>
+  onClick={handleViewCV}
+  disabled={cvLoading}
+  className={`flex items-center justify-center gap-2 
+    bg-purple-600 hover:bg-purple-700 text-white 
+    px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold text-sm sm:text-base 
+    transition-all duration-300 
+    shadow-lg hover:shadow-purple-500/40 
+    w-fit mx-auto sm:mx-0
+    ${cvLoading ? 'opacity-70 cursor-not-allowed hover:bg-purple-600' : 'cursor-pointer'}`}
+>
+  {cvLoading ? (
+    <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+  ) : (
+    <Download size={16} />
+  )}
+  {intro.secondary_button_text || "Download CV"}
+</button>
                         </motion.div>
                       </motion.div>
                     )}
@@ -631,7 +647,73 @@ const Home = () => {
           </motion.div>
         </section>
       )}
+            {/* === CORE VALUES SECTION === */}
+      {coreValues.length > 0 && (
+        <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-900 to-[#1A0D2A]">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-12 sm:mb-16">
+              <motion.h2
+                initial={{ opacity: 0, y: -20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                viewport={{ once: true }}
+                className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4"
+              >
+                My Core{" "}
+                <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">
+                  Values
+                </span>
+              </motion.h2>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                transition={{ duration: 1, delay: 0.3, ease: "easeInOut" }}
+                viewport={{ once: true }}
+                className="w-20 sm:w-24 h-1 mx-auto bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+              />
+            </div>
 
+            {/* Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+              {coreValues.map((value, i) => {
+                const icons = [Heart, Film, Lightbulb, Users, Sparkles, Target, Zap];
+                const Icon = icons[i % icons.length] || Heart;
+
+                return (
+                  <motion.div
+                    key={value.id}
+                    initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ 
+                      duration: 0.8, 
+                      delay: i * 0.1,
+                      ease: [0.22, 1, 0.36, 1]
+                    }}
+                    viewport={{ once: true }}
+                    whileHover={{ 
+                      y: -12, 
+                      scale: 1.05,
+                      transition: { duration: 0.3 }
+                    }}
+                    className="group relative bg-gray-800/60 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 sm:p-8 text-center hover:border-purple-500/80 transition-all duration-400 hover:shadow-2xl hover:shadow-purple-500/20"
+                  >
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <Icon size={28} className="text-white" />
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold mb-3 text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-pink-400 transition-all">
+                      {value.title}
+                    </h3>
+                    <p className="text-gray-400 text-sm sm:text-base leading-relaxed">
+                      {value.description}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
       {/* === PROJECTS SECTION === */}
       <section className="py-10 sm:py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-gray-900">
         <div className="max-w-7xl mx-auto">
@@ -760,24 +842,27 @@ const Home = () => {
               Frequently Asked<br />
               <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">Questions</span>
             </motion.h2>
-            <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-6">
-              {faqs.map((faq, i) => (
-                <div
-                  key={i}
-                  onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
-                  className="bg-gradient-to-br from-gray-800 to-gray-950 p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl shadow-lg hover:border-purple-500 transition-all cursor-pointer max-w-[50rem] mx-auto"
-                >
-                  <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-white flex items-center gap-2 sm:gap-3">
-                    <HelpCircle className="text-purple-400" size={20} />
-                    <span className="flex-1">{faq.question}</span>
-                    <ArrowUpRight size={16} className={`text-purple-400 transition-transform ${openFAQ === i ? 'rotate-180' : ''}`} />
-                  </h3>
-                  <p className={`text-gray-300 text-xs sm:text-sm md:text-base mt-2 overflow-hidden transition-all duration-500 ${openFAQ === i ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                    {faq.answer}
-                  </p>
-                </div>
-              ))}
-            </div>
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-6 max-w-[50rem] mx-auto">
+  {faqs.map((faq, i) => (
+    <div
+      key={i}
+      onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
+      className="w-full bg-gradient-to-br from-gray-800 to-gray-950 p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl shadow-lg hover:border hover:border-purple-500 transition-all cursor-pointer"
+    >
+      <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-white flex items-start gap-2 sm:gap-3">
+        <HelpCircle className="text-purple-400 flex-shrink-0 mt-1" size={20} />
+        <span className="flex-1 leading-tight">{faq.question}</span>
+        <ArrowUpRight
+          size={16}
+          className={`text-purple-400 flex-shrink-0 mt-1 transition-transform ${openFAQ === i ? 'rotate-180' : ''}`}
+        />
+      </h3>
+      <p className={`text-gray-300 text-xs sm:text-sm md:text-base mt-4 overflow-hidden transition-all duration-500 ${openFAQ === i ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+        {faq.answer}
+      </p>
+    </div>
+  ))}
+</div>
           </div>
         </section>
       )}

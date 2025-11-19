@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Phone, AtSign, User, Hash, FileText, Send, CheckCircle, Download
 } from 'lucide-react';
 import emailjs from 'emailjs-com';
 import Header from '../Components/Header';
 import Footer from '../Components/footer';
-import Testimonials from '../Components/Testimonials';
 import {
   Play, Award, Calendar, Users, MapPin, ArrowUpRight, HelpCircle,
   PenTool, Palette, Music, MessageCircle, Edit3, Cpu, Camera, Laptop,
@@ -141,6 +141,10 @@ const CV_ENDPOINT = import.meta.env.DEV
   ? 'http://127.0.0.1:8000/api/cv/active/'
   : `${BASE_URL}/api/cv/active/`;
 
+  // Dynamic Logos endpoint – local in dev, prod in build
+const LOGOS_ENDPOINT = import.meta.env.DEV
+  ? 'http://127.0.0.1:8000/home/logos/'
+  : `${BASE_URL}/home/logos/`;
 // === HELPERS ===
 const extractData = <T,>(response: any): T[] => {
   if (response && response.results && Array.isArray(response.results)) {
@@ -194,6 +198,13 @@ const Home = () => {
   // === CV STATE ===
   const [, setCvData] = useState<CVData | null>(null);
   const [cvLoading, setCvLoading] = useState(false);
+
+  const [logos, setLogos] = useState<Array<{
+  id: number;
+  title: string;
+  logo_url: string;
+  website_url: string | null;
+}>>([]);
 
   // === FETCH CV ===
   useEffect(() => {
@@ -310,33 +321,35 @@ const Home = () => {
 
   // === DATA FETCHING ===
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [
-  heroRes,
-  statsRes,
-  introRes,
-  skillsRes,
-  toolsRes,
-  faqsRes,
-  ctaRes,
-  tabsRes,
-  projectsRes,
-  coreValuesRes  
-] = await Promise.all([
-  axios.get(`${BASE_URL}/home/hero/`).catch(() => ({ data: null })),
-  axios.get(`${BASE_URL}/home/stats/`).catch(() => ({ data: [] })),
-  axios.get(`${BASE_URL}/home/intro/`).catch(() => ({ data: null })),
-  axios.get(`${BASE_URL}/home/skills/`).catch(() => ({ data: [] })),
-  axios.get(`${BASE_URL}/home/tools/`).catch(() => ({ data: [] })),
-  axios.get(`${BASE_URL}/home/faqs/`).catch(() => ({ data: [] })),
-  axios.get(`${BASE_URL}/home/cta/`).catch(() => ({ data: null })),
-  axios.get(`${BASE_URL}/about/tab-content/`).catch(() => ({ data: [] })),
-  axios.get(`${BASE_URL}/api/portfolio/projects/`).catch(() => ({ data: { results: [] } })),
-  axios.get(`${BASE_URL}/about/core-values/`).catch(() => ({ data: [] })) 
-]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [
+        heroRes,
+        statsRes,
+        introRes,
+        skillsRes,
+        toolsRes,
+        faqsRes,
+        ctaRes,
+        tabsRes,
+        projectsRes,
+        coreValuesRes,
+        logosRes  // ← NEW: Fetch logos
+      ] = await Promise.all([
+        axios.get(`${BASE_URL}/home/hero/`).catch(() => ({ data: null })),
+        axios.get(`${BASE_URL}/home/stats/`).catch(() => ({ data: [] })),
+        axios.get(`${BASE_URL}/home/intro/`).catch(() => ({ data: null })),
+        axios.get(`${BASE_URL}/home/skills/`).catch(() => ({ data: [] })),
+        axios.get(`${BASE_URL}/home/tools/`).catch(() => ({ data: [] })),
+        axios.get(`${BASE_URL}/home/faqs/`).catch(() => ({ data: [] })),
+        axios.get(`${BASE_URL}/home/cta/`).catch(() => ({ data: null })),
+        axios.get(`${BASE_URL}/about/tab-content/`).catch(() => ({ data: [] })),
+        axios.get(`${BASE_URL}/api/portfolio/projects/`).catch(() => ({ data: { results: [] } })),
+        axios.get(`${BASE_URL}/about/core-values/`).catch(() => ({ data: [] })),
+        axios.get(LOGOS_ENDPOINT).catch(() => ({ data: [] }))      ]);
 
         // ---- HERO ----
         const heroData = extractData<Hero>(heroRes.data);
@@ -351,13 +364,14 @@ const Home = () => {
         }
 
         setStats(extractData<Stat>(statsRes.data).filter(s => s.is_active));
-        setIntro(extractData<Intro>(introRes.data)[0] || null);
-        setSkills(extractData<Skill>(skillsRes.data).filter(s => s.is_active));
-        setTools(extractData<Tool>(toolsRes.data).filter(t => t.is_active));
-        setFaqs(extractData<FAQ>(faqsRes.data).filter(f => f.is_active));
-        setCta(extractData<CTA>(ctaRes.data)[0] || null);
-        setTabContent(extractData<TabContent>(tabsRes.data));
-        setCoreValues(extractData<CoreValue>(coreValuesRes.data));
+      setIntro(extractData<Intro>(introRes.data)[0] || null);
+      setSkills(extractData<Skill>(skillsRes.data).filter(s => s.is_active));
+      setTools(extractData<Tool>(toolsRes.data).filter(t => t.is_active));
+      setFaqs(extractData<FAQ>(faqsRes.data).filter(f => f.is_active));
+      setCta(extractData<CTA>(ctaRes.data)[0] || null);
+      setTabContent(extractData<TabContent>(tabsRes.data));
+      setCoreValues(extractData<CoreValue>(coreValuesRes.data));
+      setLogos(extractData<any>(logosRes.data));
 
         // ---- PROJECTS ----
         const projectList = extractData<Project>(projectsRes.data);
@@ -647,6 +661,118 @@ const Home = () => {
           </motion.div>
         </section>
       )}
+
+      {/* === LOGO CAROUSEL – PERFECTLY SMOOTH INFINITE LOOP === */}
+<section className="py-16 sm:py-20 bg-gradient-to-br from-purple-900/20 via-gray-900 to-pink-900/20 overflow-hidden">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="text-center mb-8 sm:mb-12">
+      <motion.h2
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3"
+      >
+        Trusted By{" "}
+        <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">
+          Leading Brands
+        </span>
+      </motion.h2>
+      <motion.div
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        viewport={{ once: true }}
+        className="w-16 sm:w-20 h-1 mx-auto bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+      />
+    </div>
+
+    {logos.length > 0 ? (
+      <div className="relative">
+        {/* Fade edges */}
+        <div className="absolute left-0 top-0 bottom-0 w-20 sm:w-32 bg-gradient-to-r from-gray-900 to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-20 sm:w-32 bg-gradient-to-l from-gray-900 to-transparent z-10 pointer-events-none"></div>
+
+        {/* Infinite Marquee Container */}
+        <div className="overflow-hidden">
+          <motion.div
+            className="flex"
+            animate={{ x: [0, -100 + "%"] }}  // This is the magic
+            transition={{
+              x: {
+                repeat: Infinity,
+                repeatType: "loop",
+                duration: 30,        // Adjust speed here (lower = faster)
+                ease: "linear",
+              },
+            }}
+          >
+            {/* First set */}
+            {logos.map((logo) => (
+              <motion.a
+                key={`first-${logo.id}`}
+                href={logo.website_url || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.15, y: -10 }}
+                className="flex-shrink-0 mx-8"  // Consistent spacing
+              >
+                <div className="relative group">
+                  <div className="w-36 sm:w-44 md:w-52 h-20 sm:h-24 bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden p-6 border border-gray-700/50 hover:border-purple-500/70 transition-all duration-500 hover:shadow-purple-500/30">
+                    <img
+                      src={logo.logo_url}
+                      alt={logo.title}
+                      className="max-w-full max-h-full object-contain drop-shadow-lg"
+                      style={{ filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.3))' }}
+                    />
+                  </div>
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/95 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-purple-500/30 shadow-xl">
+                    {logo.title}
+                  </div>
+                </div>
+              </motion.a>
+            ))}
+
+            {/* Second set – for seamless loop */}
+            {logos.map((logo) => (
+              <motion.a
+                key={`second-${logo.id}`}
+                href={logo.website_url || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.15, y: -10 }}
+                className="flex-shrink-0 mx-8"
+              >
+                <div className="relative group">
+                  <div className="w-36 sm:w-44 md:w-52 h-20 sm:h-24 bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden p-6 border border-gray-700/50 hover:border-purple-500/70 transition-all duration-500 hover:shadow-purple-500/30">
+                    <img
+                      src={logo.logo_url}
+                      alt={logo.title}
+                      className="max-w-full max-h-full object-contain drop-shadow-lg"
+                      style={{ filter: 'drop-shadow(0 0 8px rgba(147, 51, 234, 0.3))' }}
+                    />
+                  </div>
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/95 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-purple-500/30 shadow-xl">
+                    {logo.title}
+                  </div>
+                </div>
+              </motion.a>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    ) : (
+      <p className="text-center text-gray-500 italic">No client logos added yet.</p>
+    )}
+
+    <div className="text-center mt-8 sm:mt-10">
+      <p className="text-gray-400 text-sm sm:text-base">
+        Collaborating with industry leaders to create exceptional visual experiences
+      </p>
+    </div>
+  </div>
+</section>
+
             {/* === CORE VALUES SECTION === */}
       {coreValues.length > 0 && (
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-900 to-[#1A0D2A]">
@@ -832,7 +958,8 @@ const Home = () => {
         </div>
       </section>
 
-      <Testimonials />
+      {/* === TESTIMONIALS – FIXED & NO MORE WHITE SCREEN === */}
+      <TestimonialsSection />
 
       {/* === FAQ === */}
       {faqs.length > 0 && (
@@ -1000,3 +1127,120 @@ const Home = () => {
 };
 
 export default Home;
+
+// ──────────────────────────────────────────────────────────────
+// TESTIMONIALS SECTION – Extracted to fix Hook Rules violation
+// ──────────────────────────────────────────────────────────────
+const TestimonialsSection: React.FC = () => {
+  const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    fetch(
+      import.meta.env.DEV
+        ? 'http://127.0.0.1:8000/home/testimonials/'
+        : 'https://api.daudportfolio.cloud/home/testimonials/'
+    )
+      .then(r => r.json())
+      .then(data => {
+        const items = Array.isArray(data) ? data : data.results || [];
+        setTestimonials(
+          items.map((t: any) => ({
+            ...t,
+            color: t.gradient_color?.trim() || 'from-purple-500 to-pink-500',
+          }))
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  if (testimonials.length === 0) return null;
+
+  const current = testimonials[currentIndex];
+  const next = () => setCurrentIndex(i => (i + 1) % testimonials.length);
+  const prev = () => setCurrentIndex(i => (i - 1 + testimonials.length) % testimonials.length);
+
+  return (
+    <section className="py-16 md:py-20 bg-gradient-to-br from-purple-900/20 via-gray-900 to-pink-900/20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute top-20 left-10 w-72 h-72 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-20 right-10 w-80 h-80 bg-pink-600/20 rounded-full blur-3xl animate-pulse delay-1000" />
+
+      <div className="max-w-5xl mx-auto px-6 relative z-10">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-bold text-white">
+            Client <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Testimonials</span>
+          </h2>
+          <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto mt-4 rounded-full" />
+        </div>
+
+        {/* Compact Card */}
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-gray-800/80 backdrop-blur-xl rounded-2xl p-8 md:p-10 border border-gray-700 shadow-2xl relative overflow-hidden"
+          >
+            {/* Quote Icon - Smaller */}
+            <Quote className="w-12 h-12 absolute -top-5 -left-3 text-purple-500/30" />
+
+            {/* Stars */}
+            <div className="flex justify-center gap-1 mb-5">
+              {[...Array(current.rating || 5)].map((_, i) => (
+                <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+              ))}
+            </div>
+
+            {/* Text - Reduced size */}
+            <p className="text-lg md:text-xl italic text-gray-100 text-center leading-relaxed mb-8">
+              "{current.text}"
+            </p>
+
+            {/* Client Info */}
+            <div className="flex items-center justify-center gap-4">
+              {current.avatar_url ? (
+                <img src={current.avatar_url} alt={current.name} className="w-14 h-14 rounded-full ring-4 ring-purple-500/30" />
+              ) : (
+                <div className={`w-14 h-14 bg-gradient-to-r ${current.color} rounded-full flex items-center justify-center text-xl font-bold text-white`}>
+                  {current.name[0]}
+                </div>
+              )}
+              <div className="text-center">
+                <h4 className="text-lg font-bold text-white">{current.name}</h4>
+                <p className="text-purple-400 text-sm">{current.company}</p>
+              </div>
+            </div>
+
+            {/* Gradient bar */}
+            <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${current.color} rounded-b-2xl`} />
+          </motion.div>
+
+          {/* Compact Navigation */}
+          <div className="flex justify-center items-center gap-6 mt-8">
+            <button onClick={prev} className="p-2.5 bg-gray-800/70 hover:bg-purple-600 rounded-full transition">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            <div className="flex gap-2">
+              {testimonials.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-2 rounded-full transition-all ${
+                    i === currentIndex ? 'w-8 bg-gradient-to-r from-purple-500 to-pink-500' : 'w-2 bg-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button onClick={next} className="p-2.5 bg-gray-800/70 hover:bg-purple-600 rounded-full transition">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};

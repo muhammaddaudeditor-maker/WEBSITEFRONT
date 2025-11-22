@@ -15,6 +15,22 @@ const Header = () => {
     cv_url: null,
     title: "My CV",
   });
+  const [logoError, setLogoError] = useState(false);
+
+  // Helper function to construct full URL
+  const getFullUrl = (url: string | null) => {
+    if (!url) return null;
+    
+    // If already a full URL, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // If relative path, construct full URL
+    const BASE_URL = "https://api.daudportfolio.cloud";
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `${BASE_URL}${cleanPath}`;
+  };
 
   // scroll state
   useEffect(() => {
@@ -32,6 +48,7 @@ const Header = () => {
         );
         if (response.ok) {
           const data = await response.json();
+          console.log("🎨 Site Config Data:", data);
           setSiteConfig(data);
         }
       } catch (error) {
@@ -50,6 +67,7 @@ const Header = () => {
         );
         if (response.ok) {
           const data = await response.json();
+          console.log("📄 CV Data:", data);
           setCvData(data);
         }
       } catch (error) {
@@ -93,27 +111,30 @@ const Header = () => {
   };
 
   const handleDownloadCV = () => {
-    if (cvData.cv_url) {
+    const fullCvUrl = getFullUrl(cvData.cv_url);
+    
+    if (fullCvUrl) {
       const link = document.createElement("a");
-      link.href = cvData.cv_url;
+      link.href = fullCvUrl;
       link.download = `${cvData.title || "CV"}.pdf`;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-    //   toast.success("🎉 CV download started successfully!", {
-    //     position: "bottom-right",
-    //     theme: "dark",
-    //   });
-    // } else {
-    //   toast.error("⚠️ CV not available. Please try again later.", {
-    //     position: "bottom-right",
-    //     theme: "dark",
-    //   });
+      
+      console.log("✅ CV download initiated:", fullCvUrl);
+    } else {
+      console.error("❌ CV URL not available");
     }
   };
+
+  const handleLogoError = () => {
+    console.error("❌ Logo failed to load:", getFullUrl(siteConfig.logo_url));
+    setLogoError(true);
+  };
+
+  const fullLogoUrl = getFullUrl(siteConfig.logo_url);
 
   return (
     <>
@@ -122,20 +143,22 @@ const Header = () => {
 
       {/* Navbar */}
       <nav
-  className={`w-full transition-all duration-300 ${
-    isScrolled
-      ? "bg-gray-900/95 backdrop-blur-md shadow-lg"
-      : "bg-transparent"
-  }`}
->
+        className={`w-full transition-all duration-300 ${
+          isScrolled
+            ? "bg-gray-900/95 backdrop-blur-md shadow-lg"
+            : "bg-transparent"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <div className="flex-shrink-0">
-              {siteConfig.logo_url ? (
+              {fullLogoUrl && !logoError ? (
                 <img
-                  src={siteConfig.logo_url}
+                  src={fullLogoUrl}
                   alt={siteConfig.site_name}
+                  onError={handleLogoError}
+                  onLoad={() => console.log("✅ Logo loaded successfully:", fullLogoUrl)}
                   className="h-12 w-auto object-contain"
                 />
               ) : (

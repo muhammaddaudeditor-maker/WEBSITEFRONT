@@ -59,13 +59,9 @@ interface TabContent {
   image_url?: string;
 }
 
-// Use a named easing (string) for compatibility with Framer Motion TS types.
 const smoothEase = "easeInOut" as const;
-
-// Typed spring hover
 const hoverSpring = { type: "spring" as const, stiffness: 100, damping: 12 };
 
-// Section variants and item variants
 const sectionContainer = {
   hidden: { opacity: 0, y: 20 },
   show: (delayChildren = 0) => ({
@@ -88,71 +84,127 @@ const About = () => {
   const [cta, setCTA] = useState<CTA | null>(null);
   const [tabContent, setTabContent] = useState<TabContent[]>([]);
   const [activeTab, setActiveTab] = useState<"story" | "philosophy" | "process">("story");
+  const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const statsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchAll = async () => {
+    const BASE_URL = "https://api.daudportfolio.cloud";
+    
+    // Fetch critical data first (tabs + stats), then fetch rest
+    const fetchCriticalData = async () => {
       try {
-        // UPDATED BASE URL
-        const BASE_URL = "https://api.daudportfolio.cloud";
-        const endpoints = {
-          stats: `${BASE_URL}/about/stats/`,
-          core: `${BASE_URL}/about/core-values/`,
-          timeline: `${BASE_URL}/about/timeline/`,
-          skills: `${BASE_URL}/about/skills/`,
-          cta: `${BASE_URL}/about/cta/`,
-          tabs: `${BASE_URL}/about/tab-content/`,
-        };
-
-        const [statsRes, coreRes, timelineRes, skillsRes, ctaRes, tabsRes] = await Promise.all([
-          fetch(endpoints.stats),
-          fetch(endpoints.core),
-          fetch(endpoints.timeline),
-          fetch(endpoints.skills),
-          fetch(endpoints.cta),
-          fetch(endpoints.tabs),
+        const [tabsRes, statsRes] = await Promise.all([
+          fetch(`${BASE_URL}/about/tab-content/`),
+          fetch(`${BASE_URL}/about/stats/`),
         ]);
 
-        const [statsJson, coreJson, timelineJson, skillsJson, ctaJson, tabsJson]: any[] =
-          await Promise.all([
-            statsRes.json(),
-            coreRes.json(),
-            timelineRes.json(),
-            skillsRes.json(),
-            ctaRes.json(),
-            tabsRes.json(),
-          ]);
+        const [tabsJson, statsJson] = await Promise.all([
+          tabsRes.json(),
+          statsRes.json(),
+        ]);
 
         const getResults = (data: any) =>
           Array.isArray(data) ? data : data?.results || data?.data || [];
 
+        const tabs = getResults(tabsJson);
+        console.log("📸 Tab Content with Images:", tabs);
+        
+        setTabContent(tabs);
         setStats(getResults(statsJson));
+        setLoading(false); // Show page immediately after critical data loads
+
+        // Fetch remaining data in background
+        fetchRemainingData();
+      } catch (err) {
+        console.error("❌ Failed to fetch critical data:", err);
+        setLoading(false); // Show page even if fetch fails
+      }
+    };
+
+    const fetchRemainingData = async () => {
+      try {
+        const [coreRes, timelineRes, skillsRes, ctaRes] = await Promise.all([
+          fetch(`${BASE_URL}/about/core-values/`),
+          fetch(`${BASE_URL}/about/timeline/`),
+          fetch(`${BASE_URL}/about/skills/`),
+          fetch(`${BASE_URL}/about/cta/`),
+        ]);
+
+        const [coreJson, timelineJson, skillsJson, ctaJson] = await Promise.all([
+          coreRes.json(),
+          timelineRes.json(),
+          skillsRes.json(),
+          ctaRes.json(),
+        ]);
+
+        const getResults = (data: any) =>
+          Array.isArray(data) ? data : data?.results || data?.data || [];
+
         setCoreValues(getResults(coreJson));
         setTimeline(getResults(timelineJson));
         setSkills(getResults(skillsJson));
         setCTA(getResults(ctaJson)[0] || null);
-        setTabContent(getResults(tabsJson));
       } catch (err) {
-        console.error("❌ Failed to fetch about page data:", err);
+        console.error("❌ Failed to fetch remaining data:", err);
       }
     };
 
-    fetchAll();
+    fetchCriticalData();
   }, []);
 
-  // Function to navigate to contact form
   const navigateToContact = () => {
     window.location.href = "/#contact";
+  };
+
+  const handleImageError = (imageUrl: string) => {
+    setImageErrors(prev => new Set(prev).add(imageUrl));
   };
 
   const valueIcons = [Heart, Film, Lightbulb, Users];
   const timelineIcons = [PlayCircle, Award, Briefcase, Globe, Sparkles];
   const skillIcons = [Camera, Sparkles, Film, Zap, Target, Eye];
+  
   const getTab = (name: string) => tabContent.find((t) => t.tab_name === name);
+  
+  // FIX: Get image URL with proper fallback and full URL construction
+  const getTabImage = (tab: TabContent | undefined) => {
+    if (!tab) return null;
+    
+    const imageField = tab.image || tab.image_url;
+    if (!imageField) return null;
+    
+    // If the image is already a full URL, return it
+    if (imageField.startsWith('http://') || imageField.startsWith('https://')) {
+      return imageField;
+    }
+    
+    // If it's a relative path, construct the full URL
+    const BASE_URL = "https://api.daudportfolio.cloud";
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = imageField.startsWith('/') ? imageField : `/${imageField}`;
+    return `${BASE_URL}${cleanPath}`;
+  };
+
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-gray-400 text-lg">Loading content...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white overflow-x-hidden">
       <Header />      
+      
       {/* TABS */}
       {tabContent.length > 0 && (
         <section className="py-12 sm:py-16 px-4 sm:px-8 bg-gray-900">
@@ -189,30 +241,49 @@ const About = () => {
               <div className="w-full lg:w-5/12 flex justify-center">
                 <div className="w-full max-w-[500px]">
                   <AnimatePresence mode="wait">
-                    {getTab(activeTab)?.image_url ? (
-                      <motion.img
-                        key={getTab(activeTab)?.image_url}
-                        src={getTab(activeTab)?.image_url}
-                        alt={getTab(activeTab)?.title || "Tab Image"}
-                        initial={{ opacity: 0, y: 20, scale: 0.995 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.9, ease: smoothEase }}
-                        className="w-full h-auto object-cover rounded-3xl shadow-xl border-2 border-purple-500/30 hover:border-purple-500/60 transition-all duration-400"
-                      />
-                    ) : (
-                      <motion.div
-                        key={"no-image-" + activeTab}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="w-full h-48 sm:h-64 bg-gray-800 rounded-3xl flex flex-col items-center justify-center text-gray-400 text-sm gap-2"
-                      >
-                        <Camera size={48} className="text-gray-600" />
-                        <p>No Image Available</p>
-                      </motion.div>
-                    )}
+                    {(() => {
+                      const currentTab = getTab(activeTab);
+                      const imageUrl = getTabImage(currentTab);
+                      const hasImageError = imageUrl && imageErrors.has(imageUrl);
+                      
+                      console.log("🖼️ Current Tab:", activeTab, "Image URL:", imageUrl);
+                      
+                      if (imageUrl && !hasImageError) {
+                        return (
+                          <motion.img
+                            key={imageUrl}
+                            src={imageUrl}
+                            alt={currentTab?.title || "Tab Image"}
+                            onError={() => {
+                              console.error("❌ Image failed to load:", imageUrl);
+                              handleImageError(imageUrl);
+                            }}
+                            onLoad={() => console.log("✅ Image loaded successfully:", imageUrl)}
+                            loading="lazy"
+                            initial={{ opacity: 0, y: 20, scale: 0.995 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.9, ease: smoothEase }}
+                            className="w-full h-auto object-cover rounded-3xl shadow-xl border-2 border-purple-500/30 hover:border-purple-500/60 transition-all duration-400"
+                          />
+                        );
+                      }
+                      
+                      return (
+                        <motion.div
+                          key={"no-image-" + activeTab}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.6 }}
+                          className="w-full h-48 sm:h-64 bg-gray-800 rounded-3xl flex flex-col items-center justify-center text-gray-400 text-sm gap-2"
+                        >
+                          <Camera size={48} className="text-gray-600" />
+                          <p>{hasImageError ? "Failed to load image" : "No Image Available"}</p>
+                          {imageUrl && <p className="text-xs text-gray-500 px-4 text-center break-all">{imageUrl}</p>}
+                        </motion.div>
+                      );
+                    })()}
                   </AnimatePresence>
                 </div>
               </div>

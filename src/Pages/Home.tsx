@@ -137,14 +137,10 @@ interface CVData {
 const BASE_URL = 'https://api.daudportfolio.cloud';
 
 // Dynamic endpoint – local in dev, prod in build
-const CV_ENDPOINT = import.meta.env.DEV
-  ? 'http://127.0.0.1:8000/api/cv/active/'
-  : `${BASE_URL}/api/cv/active/`;
+const CV_ENDPOINT = `${BASE_URL}/api/cv/active/`;
 
   // Dynamic Logos endpoint – local in dev, prod in build
-const LOGOS_ENDPOINT = import.meta.env.DEV
-  ? 'http://127.0.0.1:8000/home/logos/'
-  : `${BASE_URL}/home/logos/`;
+const LOGOS_ENDPOINT =`${BASE_URL}/home/logos/`;
 // === HELPERS ===
 const extractData = <T,>(response: any): T[] => {
   if (response && response.results && Array.isArray(response.results)) {
@@ -1136,29 +1132,42 @@ const TestimonialsSection: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    fetch(
-      import.meta.env.DEV
-        ? 'http://127.0.0.1:8000/home/testimonials/'
-        : 'https://api.daudportfolio.cloud/home/testimonials/'
-    )
-      .then(r => r.json())
-      .then(data => {
-        const items = Array.isArray(data) ? data : data.results || [];
+    fetch("https://api.daudportfolio.cloud/home/testimonials/")
+      .then((r) => r.json())
+      .then((data) => {
+        // API ALWAYS returns {results: [...]}
+        const items = Array.isArray(data.results) ? data.results : [];
+
         setTestimonials(
           items.map((t: any) => ({
             ...t,
-            color: t.gradient_color?.trim() || 'from-purple-500 to-pink-500',
+            color: t.gradient_color?.trim() || "from-purple-500 to-pink-500",
           }))
         );
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.log("Testimonials fetch failed:", err);
+      });
   }, []);
 
   if (testimonials.length === 0) return null;
 
-  const current = testimonials[currentIndex];
-  const next = () => setCurrentIndex(i => (i + 1) % testimonials.length);
-  const prev = () => setCurrentIndex(i => (i - 1 + testimonials.length) % testimonials.length);
+  // Safe fallback to avoid crashing when switching fast
+  const current =
+    testimonials[currentIndex] || {
+      text: "",
+      rating: 5,
+      name: "Guest",
+      company: "",
+      avatar_url: null,
+      color: "from-purple-500 to-pink-500",
+    };
+
+  const next = () =>
+    setCurrentIndex((i) => (i + 1) % testimonials.length);
+
+  const prev = () =>
+    setCurrentIndex((i) => (i - 1 + testimonials.length) % testimonials.length);
 
   return (
     <section className="py-16 md:py-20 bg-gradient-to-br from-purple-900/20 via-gray-900 to-pink-900/20 relative overflow-hidden">
@@ -1170,12 +1179,15 @@ const TestimonialsSection: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-white">
-            Client <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Testimonials</span>
+            Client{" "}
+            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Testimonials
+            </span>
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto mt-4 rounded-full" />
         </div>
 
-        {/* Compact Card */}
+        {/* Testimonial Card */}
         <div className="max-w-3xl mx-auto">
           <motion.div
             key={currentIndex}
@@ -1184,17 +1196,20 @@ const TestimonialsSection: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="bg-gray-800/80 backdrop-blur-xl rounded-2xl p-8 md:p-10 border border-gray-700 shadow-2xl relative overflow-hidden"
           >
-            {/* Quote Icon - Smaller */}
+            {/* Quote Icon */}
             <Quote className="w-12 h-12 absolute -top-5 -left-3 text-purple-500/30" />
 
             {/* Stars */}
             <div className="flex justify-center gap-1 mb-5">
               {[...Array(current.rating || 5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                <Star
+                  key={i}
+                  className="w-5 h-5 text-yellow-400 fill-yellow-400"
+                />
               ))}
             </div>
 
-            {/* Text - Reduced size */}
+            {/* Text */}
             <p className="text-lg md:text-xl italic text-gray-100 text-center leading-relaxed mb-8">
               "{current.text}"
             </p>
@@ -1202,25 +1217,41 @@ const TestimonialsSection: React.FC = () => {
             {/* Client Info */}
             <div className="flex items-center justify-center gap-4">
               {current.avatar_url ? (
-                <img src={current.avatar_url} alt={current.name} className="w-14 h-14 rounded-full ring-4 ring-purple-500/30" />
+                <img
+                  src={current.avatar_url}
+                  alt={current.name}
+                  className="w-14 h-14 rounded-full ring-4 ring-purple-500/30"
+                />
               ) : (
-                <div className={`w-14 h-14 bg-gradient-to-r ${current.color} rounded-full flex items-center justify-center text-xl font-bold text-white`}>
-                  {current.name[0]}
+                <div
+                  className={`w-14 h-14 bg-gradient-to-r ${current.color} rounded-full flex items-center justify-center text-xl font-bold text-white`}
+                >
+                  {current.name?.[0] || "U"}
                 </div>
               )}
+
               <div className="text-center">
-                <h4 className="text-lg font-bold text-white">{current.name}</h4>
-                <p className="text-purple-400 text-sm">{current.company}</p>
+                <h4 className="text-lg font-bold text-white">
+                  {current.name}
+                </h4>
+                <p className="text-purple-400 text-sm">
+                  {current.company}
+                </p>
               </div>
             </div>
 
-            {/* Gradient bar */}
-            <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${current.color} rounded-b-2xl`} />
+            {/* Bottom Gradient Bar */}
+            <div
+              className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${current.color} rounded-b-2xl`}
+            />
           </motion.div>
 
-          {/* Compact Navigation */}
+          {/* Navigation */}
           <div className="flex justify-center items-center gap-6 mt-8">
-            <button onClick={prev} className="p-2.5 bg-gray-800/70 hover:bg-purple-600 rounded-full transition">
+            <button
+              onClick={prev}
+              className="p-2.5 bg-gray-800/70 hover:bg-purple-600 rounded-full transition"
+            >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
@@ -1229,13 +1260,18 @@ const TestimonialsSection: React.FC = () => {
                 <div
                   key={i}
                   className={`h-2 rounded-full transition-all ${
-                    i === currentIndex ? 'w-8 bg-gradient-to-r from-purple-500 to-pink-500' : 'w-2 bg-gray-600'
+                    i === currentIndex
+                      ? "w-8 bg-gradient-to-r from-purple-500 to-pink-500"
+                      : "w-2 bg-gray-600"
                   }`}
                 />
               ))}
             </div>
 
-            <button onClick={next} className="p-2.5 bg-gray-800/70 hover:bg-purple-600 rounded-full transition">
+            <button
+              onClick={next}
+              className="p-2.5 bg-gray-800/70 hover:bg-purple-600 rounded-full transition"
+            >
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>

@@ -50,28 +50,41 @@ const Portfolio = () => {
   const [videoPopup, setVideoPopup] = useState<string | null>(null);
   const projectsPerPage = 6;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [catRes, projRes] = await Promise.all([
-          fetch('https://api.daudportfolio.cloud/api/portfolio/categories/'),
-          fetch('https://api.daudportfolio.cloud/api/portfolio/projects/'),
-        ]);
+ useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const [catRes, initialProjRes] = await Promise.all([
+        fetch('https://api.daudportfolio.cloud/api/portfolio/categories/'),
+        fetch('https://api.daudportfolio.cloud/api/portfolio/projects/'),
+      ]);
 
-        const catData = await catRes.json();
-        const projData = await projRes.json();
+      const catData = await catRes.json();
+      setCategories(catData.results || catData);
 
-        setCategories(catData.results || catData);
-        setProjects(projData.results || projData);
-      } catch (error) {
-        console.error('Error fetching portfolio data:', error);
-      } finally {
-        setLoading(false);
+      let allProjects: Project[] = [];
+      let projData = await initialProjRes.json();
+      allProjects = [...(projData.results || projData)];
+
+      // Handle pagination by following 'next' links
+      let nextUrl = projData.next;
+      while (nextUrl) {
+        const nextRes = await fetch(nextUrl);
+        projData = await nextRes.json();
+        allProjects = [...allProjects, ...(projData.results || projData)];
+        nextUrl = projData.next;
       }
-    };
 
-    fetchData();
-  }, []);
+      setProjects(allProjects);
+    } catch (error) {
+      console.error('Error fetching portfolio data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+
 
   const filteredProjects =
     selectedCategory === 'all'
